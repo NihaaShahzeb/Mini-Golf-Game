@@ -1,0 +1,116 @@
+`timescale 1ns / 1ps
+
+module GolfGametimer(
+    input wire clk_100MHz,
+    input wire reset,
+    input wire sensor_a,
+    input wire sensor_b,
+    input wire sensor_c,
+    input wire clk_timer, // Timer clock input
+    input wire rst_timer, // Timer reset input
+    input wire stop_timer, // Timer stop signal
+    output wire [1:0] score, // Output BCD representation of the score
+    output wire game_over 
+); 
+
+    // State and control signals
+    reg [1:0] state = 2'b00; 
+    reg enable_a = 1'b1, enable_b = 1'b0, enable_c = 1'b0;
+    wire detected_a, detected_b, detected_c; 
+    reg game_finished = 1'b0; 
+    reg [1:0] score_bcd;
+
+    // Timer signals
+    wire [5:0] timer_val;
+    wire [6:0] timer_seg;
+    //reg stop_timer;
+    
+    // Sensor module instantiations
+    SensorModule sensorA(
+        .clk(clk_100MHz),
+        .reset(reset),
+        .enable(enable_a),
+        .sensor_signal(sensor_a),
+        .ball_detected(detected_a)
+    );
+    SensorModule sensorB(
+        .clk(clk_100MHz),
+        .reset(reset),
+        .enable(enable_b),
+        .sensor_signal(sensor_b),
+        .ball_detected(detected_b)
+    );
+    SensorModule sensorC(
+        .clk(clk_100MHz),
+        .reset(reset),
+        .enable(enable_c),
+        .sensor_signal(sensor_c),
+        .ball_detected(detected_c)
+    );
+
+    // Timer module instantiation
+    display_ssegment timer(
+        .clk(clk_timer),
+        .rst(rst_timer),
+        //.stop(stop_timer),
+        .dig(timer_dig),
+        .seg(timer_seg),
+        .out(timer_val)
+    );
+
+    // State machine
+    always @(posedge clk_100MHz) begin
+    if (timer_val >= 30) begin
+            enable_a <=1'b0;
+            enable_b <=1'b0;
+            enable_c <=1'b0;        
+            end 
+    
+    else if (reset) begin
+            state <= 2'b00;
+            enable_a <= 1'b1;
+            enable_b <= 1'b0;
+            enable_c <= 1'b0;
+            game_finished <= 1'b0;
+            score_bcd <= 2'b00;
+        end else begin
+            case (state)
+                2'b00: begin
+                    if (detected_a && enable_a && !game_finished) begin
+                        state <= 2'b01;
+                        enable_a <= 1'b0;
+                        enable_b <= 1'b1;
+                        score_bcd <= 2'b01;
+                    end
+                end
+                2'b01: begin
+                    if (detected_b && enable_b && !game_finished) begin
+                        state <= 2'b10;
+                        enable_b <= 1'b0;
+                        enable_c <= 1'b1;
+                        score_bcd <= 2'b10;
+                    end
+                end
+                2'b10: begin
+                    if (detected_c && enable_c && !game_finished) begin
+                        enable_a <=1'b0;
+                        enable_b <=1'b0;
+                        enable_c <=1'b0;
+                        score_bcd <=2'b11; 
+                        //stop_timer <= 1'b1;
+                       
+                    end 
+                end
+            endcase
+        end
+    end
+
+    // Check timer for game over condition
+//    always @(posedge clk_100MHz) begin
+//            end
+
+    // Game over signal assignment
+    assign game_over = game_finished; 
+    assign score = score_bcd;
+
+endmodule
