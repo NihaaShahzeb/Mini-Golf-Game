@@ -1,0 +1,74 @@
+`timescale 1ns / 1ps
+
+
+
+module top2(
+    input clk_100MHz,       // 100MHz on Basys 3
+    input reset, sensor_a, sensor_b, sensor_c,           // btnC
+    output hsync,           // to VGA Connector
+    output vsync,           // to VGA Connector
+    output [11:0] rgb ,
+     output [3:0] dig,       // Digit select signals
+    output [6:0] seg       // to DAC, to VGA Connector
+    );
+
+
+    wire [9:0] w_x, w_y;
+    wire video_on, p_tick;
+    reg [11:0] rgb_reg;
+    wire [11:0] rgb_next;
+    wire [1:0] score_display;  // Score to be displayed (0 to 3)
+
+    // Instantiate Golf Game Timer Module
+    GolfGametimer golfGame(
+        .clk_100MHz(clk_100MHz), 
+        .reset(reset), 
+        .sensor_a(sensor_a), 
+        .sensor_b(sensor_b), 
+        .sensor_c(sensor_c), 
+        .clk_timer(clk_100MHz), 
+        .rst_timer(reset), 
+        .stop_timer(1'b0), // Initially, the timer should not stop
+        .score(score_display), 
+        .game_over()
+    );
+
+    // Instantiate VGA Controller
+    vga_controller vga(
+        .clk_100MHz(clk_100MHz),
+        .reset(reset),
+        .video_on(video_on),
+        .hsync(hsync),
+        .vsync(vsync),
+        .p_tick(p_tick),  
+        .x(w_x),
+        .y(w_y)
+    );
+
+    // Instantiate Pixel Clock Generator
+    pixel_clk_gen clk_gen(
+        .clk_100MHz(clk_100MHz),
+        .video_on(video_on),
+        .x(w_x),
+        .y(w_y),
+        .sec_1s(score_display), // Use score_display for seconds display
+        .time_rgb(rgb_next) // Output port connected to the VGA display
+        // No need for hours 10s digit in this context
+    );
+
+    display_ssegment segment_display(
+        .clk(clk_100MHz),
+        .rst(reset),
+        .stop(1'b0), 
+        .dig(dig),
+        .seg(seg)
+    );
+    always @(posedge clk_100MHz)
+        if(p_tick)
+            rgb_reg <= rgb_next;
+            
+    // output
+    assign rgb = rgb_reg; 
+endmodule
+
+   
