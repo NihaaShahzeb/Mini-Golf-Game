@@ -1,0 +1,174 @@
+`timescale 1ns / 1ps
+
+module pixel_clk_gen(
+    input clk_100MHz,
+    input video_on,
+    input [9:0] x, y,
+    input [3:0] sec_1s, 
+    output reg [11:0] time_rgb
+    );
+
+    localparam S1_X_L = 416;
+    localparam S1_X_R = 447;
+    localparam S1_Y_T = 192;
+    localparam S1_Y_B = 256;
+    
+    // Object Status Signals
+    wire S1_on;
+    
+    // ROM Interface Signals
+    wire [10:0] rom_addr;
+    reg [6:0] char_addr;   // 3'b011 + BCD value of time component
+    wire [6:0] char_addr_s1;
+    reg [3:0] row_addr;    // row address of digit
+    wire [3:0] row_addr_s1;
+    reg [2:0] bit_addr;    // column address of rom data
+    wire [2:0] bit_addr_s1;
+    wire [7:0] digit_word;  // data from rom
+    wire digit_bit;
+    
+    assign char_addr_s1 = {3'b011, sec_1s};
+    assign row_addr_s1 = y[5:2];   // scaling to 32x64
+    assign bit_addr_s1 = x[4:2];   // scaling to 32x64
+    
+    assign S1_on =  (S1_X_L <= x) && (x <= S1_X_R) && (S1_Y_T <= y) && (y <= S1_Y_B);
+
+    
+    // Instantiate digit rom
+    score_digit_rom sr(clk_100MHz, rom_addr, digit_word);
+    
+    // Mux for ROM Addresses and RGB    
+    always @* begin
+        time_rgb = 12'h222;  // black background
+
+        if (((x >= 60 &&x <= 75) && (y >= 20 && y <= 80)) ||
+            ((x >= 60 && x <= 100) && (y >= 20 && y <= 40)) ||
+            ((x >= 60 && x <= 100) && (y >= 60 && y <= 80))||
+            ((x >= 90 && x <= 100) && (y >= 50 && y <= 80)))
+
+                begin
+               
+                    time_rgb = 12'h0F0;  // Neon green color
+
+            end
+         // O
+        if (((x >= 110 && x <= 120 && y >= 20 && y <= 80) ||
+        (x >= 110 && x <= 140&& y >= 20 && y <= 40) ||
+        (x >= 140 && x <= 150 && y >= 20 && y <= 80) ||
+        (x >= 110 && x <= 140 && y >= 70 && y <= 80))) begin
+
+time_rgb = 12'h0F0;  // Neon green color
+
+            end
+        //L
+        if (((x >= 160 && x <= 180 && y >= 20 && y <= 80) ||
+        (x >= 160 && x <= 200&& y >= 60 && y <= 80) )) begin
+
+                time_rgb = 12'h0F0;  // Neon green color
+
+            end
+        //F
+        if (((x >= 220 && x <= 240 && y >= 20 && y <= 80) ||
+        (x >= 220 && x <= 245 && y >= 40 && y <= 50) ||
+        (x >= 220 && x <= 260 && y >= 20 && y <= 30))) begin
+
+time_rgb = 12'h0F0;  // Neon green color
+
+        end
+        
+        //G
+        if (((x >= 285 && x <= 300 && y >= 20 && y <= 80) ||
+        (x >= 285 && x <= 320 && y >= 60 && y <=80) ||
+        (x >= 285 && x <= 320 && y >= 20 && y <= 40) ||
+        (x >= 310 && x <= 320 && y >= 50 && y <= 80)) ) begin
+
+time_rgb = 12'h0F0;  // Neon green color
+
+          end
+        
+        //A
+        if (((x >= 330 && x <= 350 && y >= 20 && y <= 80) ||
+        (x >= 330 && x <= 380&& y >= 20 && y <=40) ||
+        (x >= 365 && x <= 380 && y >= 20 && y <= 80) ||
+        (x >= 330 && x <=380 && y >= 50 && y <= 60)) ) begin
+
+time_rgb = 12'h0F0;  // Neon green color
+
+       end
+        
+//        M
+        if (((x >= 400 && x <= 440 && y >= 20 && y <= 40) ||
+        (x >= 420 && x <= 430&& y >= 20 && y <=60) ||
+        (x >= 440 && x <= 450 && y >= 20 && y <= 80) ||
+        (x >= 400 && x <= 410 && y >= 20 && y <= 80)) ) begin
+time_rgb = 12'h0F0;  // Neon green color
+            end
+        
+        //E
+        if (((x >= 460 && x <= 470 && y >= 20 && y <= 80) ||
+        (x >= 460 && x <= 475&& y >= 20 && y <=30) ||
+        (x >= 460 && x <= 480 && y >= 40 && y <= 55) ||
+        (x >= 460 && x <= 475 && y >= 70 && y <= 80)) ) begin
+time_rgb = 12'h0F0;  // Neon green color
+        end
+        
+//        S     
+        if (((x >= 200 && x <= 230 && y >= 190 && y <= 200) ||
+        (x >= 200 && x <= 210 && y >= 190 && y <=210) ||
+        (x >= 200 && x <= 230 && y >= 210 && y <= 220) ||
+        (x >= 220 && x <= 230 && y >= 210 && y <= 230) ||
+        (x >= 200 && x <= 230 && y >= 230 && y <= 240)) ) begin
+time_rgb = 12'h0F0;  // Neon green color
+    end        
+    //        C     
+        if (((x >= 240 && x <= 270 && y >= 200 && y <= 210) ||
+        (x >= 240 && x <= 250 && y >= 200 && y <=240) ||
+        (x >= 240 && x <= 270 && y >= 230 && y <= 240)) ) begin
+time_rgb = 12'h0F0;  // Neon green color
+    end        
+    
+    
+    //        O    
+        if (((x >= 280 && x <= 310 && y >= 200 && y <= 210) ||
+        (x >= 280 && x <= 290 && y >= 200 && y <=240) ||
+        (x >= 300 && x <= 310 && y >= 200 && y <= 240) ||
+        (x >= 280 && x <= 310 && y >= 230 && y <= 240) ) ) begin
+time_rgb = 12'h0F0;  // Neon green color
+    end        
+    
+    //        R     
+        if (((x >= 320 && x <= 330 && y >= 200 && y <= 240) ||
+        (x >= 320 && x <= 350 && y >= 210 && y <=220) )) begin
+time_rgb = 12'h0F0;  // Neon green color
+    end        
+    
+    //        E     
+        if (((x >= 360 && x <= 370 && y >= 200 && y <= 240) ||
+        (x >= 360 && x <= 390 && y >= 200 && y <=210) ||
+        (x >= 360 && x <= 390 && y >= 216 && y <= 226) ||
+        (x >= 360 && x <= 390 && y >= 230 && y <= 240) )) begin
+time_rgb = 12'h0F0;  // Neon green color
+    end        
+    
+    
+     //        Colons    
+        if (((x >= 400 && x <= 405 && y >= 210 && y <= 215) ||
+        (x >= 400 && x <= 405 && y >= 220 && y <=225) ) ) begin
+time_rgb = 12'h0F0;  // Neon green color
+    end      
+    
+        if(S1_on) begin
+            char_addr = char_addr_s1;
+            row_addr = row_addr_s1;
+            bit_addr = bit_addr_s1;
+
+time_rgb = 12'hFFF;  // Neon green color
+
+    end  
+    end    
+    
+    // ROM Interface    
+    assign rom_addr = {char_addr, row_addr};
+    assign digit_bit = digit_word[~bit_addr];    
+                          
+endmodule
